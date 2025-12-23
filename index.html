@@ -1,0 +1,540 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Steady Doodle Opener</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Gaegu:wght@400;700&display=swap');
+
+        :root {
+            --bruh: #5bc0de;
+            --secret: #ff4d4d;
+            --ultra: #ffcc00;
+            --paper: #fdf6e3;
+            --ink: #2d2d2d;
+        }
+
+        body {
+            background-color: #e5e5f7;
+            background-image: radial-gradient(#444cf7 0.5px, transparent 0.5px), radial-gradient(#444cf7 0.5px, #e5e5f7 0.5px);
+            background-size: 20px 20px;
+            background-position: 0 0, 10px 10px;
+            color: var(--ink);
+            font-family: 'Gaegu', cursive;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 30px 10px;
+            overflow-x: hidden;
+        }
+
+        /* --- BANANA CANVAS --- */
+        #banana-canvas {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none; z-index: 101; 
+            display: none; transition: opacity 0.5s ease; 
+        }
+
+        /* --- SPEECH BUBBLES --- */
+        .bubble {
+            position: relative; background: #fff; border: 3px solid var(--ink);
+            border-radius: .4em; padding: 5px 20px; margin-bottom: 25px;
+            font-size: 28px; display: inline-block;
+            box-shadow: 4px 4px 0px rgba(0,0,0,0.1);
+            animation: float 3s ease-in-out infinite;
+        }
+        .bubble:after {
+            content: ''; position: absolute; bottom: 0; left: 50%; width: 0; height: 0;
+            border: 15px solid transparent; border-top-color: var(--ink);
+            border-bottom: 0; margin-left: -15px; margin-bottom: -15px;
+        }
+        @keyframes float {
+            0%, 100% { transform: translateY(0) rotate(-1deg); }
+            50% { transform: translateY(-5px) rotate(1deg); }
+        }
+
+        /* --- THE CASE --- */
+        .case-container {
+            position: relative; width: 800px; height: 200px; background: var(--paper);
+            border: 4px solid var(--ink); border-radius: 255px 15px 225px 15px/15px 225px 15px 255px;
+            overflow: hidden; display: flex; align-items: center; box-shadow: 10px 10px 0px rgba(0,0,0,0.1);
+        }
+        .indicator {
+            position: absolute; left: 50%; top: 0; width: 6px; height: 100%;
+            background: var(--ink); z-index: 10; transform: translateX(-50%);
+            clip-path: polygon(0% 0%, 100% 0%, 100% 85%, 50% 100%, 0% 85%);
+        }
+        .reel { display: flex; position: absolute; left: 0; will-change: transform; align-items: center; }
+        .item {
+            min-width: 150px; max-width: 150px; height: 160px; margin: 0 5px; 
+            background: white; border: 3px solid var(--ink); border-radius: 10px 20px 15px 25px;
+            display: flex; flex-direction: column; align-items: center;
+            justify-content: center; padding: 5px; box-sizing: border-box; user-select: none;
+        }
+        .item img { width: 80px; height: auto; pointer-events: none; }
+        .item span { font-size: 16px; font-weight: bold; margin-top: 5px; text-align: center; }
+
+        /* --- BUTTONS --- */
+        .controls { margin: 30px 0; text-align: center; }
+        button {
+            padding: 10px 25px; background: #ffec00; border: 3px solid var(--ink);
+            font-family: 'Gaegu', cursive; font-size: 24px; font-weight: bold;
+            cursor: pointer; border-radius: 50px 10px 50px 10px;
+            transition: 0.1s; box-shadow: 4px 4px 0px var(--ink);
+        }
+        button:hover { transform: translate(-2px, -2px); box-shadow: 6px 6px 0px var(--ink); }
+        button:active { transform: translate(2px, 2px); box-shadow: 1px 1px 0px var(--ink); }
+        button:disabled { background: #ccc; opacity: 0.6; cursor: not-allowed; box-shadow: none; }
+        #spinBtn { font-size: 35px; padding: 15px 45px; }
+
+        /* --- MONKEY Interaction --- */
+        #monkey-interaction {
+            margin-top: 20px; display: flex; flex-direction: column;
+            align-items: center; border-top: 2px dashed #ccc; padding-top: 20px; width: 100%;
+        }
+        .monkey-bubble-wrap {
+            position: relative; background: #fff; border: 3px solid var(--ink);
+            border-radius: 20px; padding: 15px 25px; margin-bottom: 10px;
+            max-width: 450px; box-shadow: 5px 5px 0px rgba(0,0,0,0.05);
+        }
+        .monkey-bubble-wrap:after {
+            content: ''; position: absolute; bottom: -15px; left: 50%; transform: translateX(-50%);
+            border-left: 15px solid transparent; border-right: 15px solid transparent; border-top: 15px solid var(--ink);
+        }
+        .monkey-ascii {
+            font-family: monospace; font-size: 14px; line-height: 1.1; color: #5d4037;
+            margin-bottom: 20px; white-space: pre; text-align: left; min-height: 250px; 
+        }
+        .choice-list { display: flex; flex-direction: column; gap: 10px; width: 100%; max-width: 350px; }
+        .btn-choice { font-size: 22px !important; border-radius: 12px !important; background: white !important; }
+
+        /* --- WIN OVERLAY --- */
+        #win-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.7); display: none;
+            flex-direction: column; align-items: center; justify-content: center; z-index: 100;
+        }
+        #win-video { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; z-index: -1; }
+        #monkey-video { display: none; } 
+        .win-card {
+            background: white; border: 5px solid var(--ink); padding: 30px; border-radius: 30px;
+            box-shadow: 15px 15px 0px rgba(0,0,0,0.3); text-align: center;
+            animation: boing 0.7s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            max-width: 600px; width: 90%; max-height: 95vh; overflow-y: auto; position: relative; 
+        }
+        @keyframes boing {
+            0% { transform: scale(0.1) rotate(-20deg); }
+            50% { transform: scale(1.1) rotate(5deg); }
+            100% { transform: scale(1) rotate(0deg); }
+        }
+        .win-img { width: 140px; margin-bottom: 10px; animation: win-bounce 0.5s infinite alternate; }
+        @keyframes win-bounce { from { transform: translateY(0); } to { transform: translateY(-10px); } }
+
+        /* --- GRID STYLES --- */
+        .collection-grid { display: flex; gap: 15px; justify-content: center; flex-wrap: wrap; max-width: 900px; margin-bottom: 40px; }
+        .reward-card {
+            width: 130px; padding: 15px; background: var(--paper); border: 3px solid var(--ink);
+            border-radius: 15px 5px 15px 5px; text-align: center; animation: boing 0.4s ease-out;
+        }
+        .possible-item-card {
+            width: 120px; padding: 10px; background: white; border: 2px dashed #bbb;
+            border-radius: 10px; text-align: center; opacity: 0.7; transition: 0.3s;
+        }
+        .possible-item-card:hover { opacity: 1; border-style: solid; border-color: var(--ink); transform: translateY(-3px); }
+        .possible-item-card img { width: 50px; filter: grayscale(1); transition: 0.3s; }
+        .possible-item-card:hover img { filter: grayscale(0); }
+        .collection-header { font-size: 32px; font-weight: bold; margin: 20px 0 15px 0; border-bottom: 3px solid var(--ink); width: fit-content; }
+
+        /* --- QUEST LOG --- */
+        .quest-log-container {
+            border: 3px dashed var(--ultra); background: #fffde7; padding: 20px;
+            border-radius: 15px; text-align: left; margin-top: 20px; transform: rotate(-2deg);
+        }
+        .quest-title { font-size: 32px; font-weight: bold; text-decoration: underline; text-align: center; margin-bottom: 15px; }
+        .quest-list { list-style-type: none; padding: 0; font-size: 24px; }
+        .quest-list li { margin-bottom: 15px; padding-left: 30px; position: relative; }
+        .quest-list li:before { content: '☐'; position: absolute; left: 0; font-weight: bold;}
+        .quest-list li.final:before { content: '★'; color: var(--ultra); }
+    </style>
+</head>
+<body>
+
+    <canvas id="banana-canvas"></canvas>
+
+    <div class="stats">Things opened: <span id="caseCount">0</span></div>
+    
+    <div class="bubble">
+        <span id="statusMsg">Gimme a spin!!</span>
+    </div>
+
+    <div class="case-container" id="main-case">
+        <div class="indicator"></div>
+        <div id="reel" class="reel"></div>
+    </div>
+
+    <div class="controls">
+        <button id="spinBtn" onclick="spin()">SPIN IT!!</button>
+        <div style="margin-top: 20px; font-size: 20px;">
+            <input type="checkbox" id="muteToggle"> Shhh! Quiet Mode?
+        </div>
+    </div>
+
+    <div class="collection-header">The Loot Table (What can I win?)</div>
+    <div class="collection-grid" id="possibleRewardsGrid"></div>
+
+    <hr style="width: 60%; border: 1px dashed #aaa; margin: 10px 0;">
+
+    <div class="collection-header">My Silly Rewards</div>
+    <div class="collection-grid" id="collectionGrid"></div>
+
+    <div id="win-overlay" onclick="closeModal()">
+        <video id="win-video" preload="auto"></video>
+        <video id="monkey-video" preload="auto"></video>
+
+        <div id="win-card" class="win-card" onclick="event.stopPropagation()">
+            <div id="initial-win-content">
+                <div id="win-rarity" style="color: #888; font-size: 18px; text-transform: uppercase; letter-spacing: 2px;"></div>
+                <img id="win-img" class="win-img" src="" alt="">
+                <div id="win-name" style="font-size: 38px; font-weight: bold; margin-bottom: 10px;"></div>
+                
+                <div id="monkey-interaction" style="display: none;">
+                    <div class="monkey-bubble-wrap">
+                        <div id="monkey-dialog" style="font-size: 22px; font-weight: bold;">OOH OOH AAH!</div>
+                    </div>
+                    <pre id="monkey-ascii-container" class="monkey-ascii"></pre>
+                    <div class="choice-list" id="monkey-choices"></div>
+                </div>
+            </div>
+            <div id="quest-log-content" style="display: none;"></div>
+            <p style="font-size: 16px; margin-top: 20px; color: #aaa; cursor: pointer;" onclick="closeModal()">[ Click here or outside to close ]</p>
+        </div>
+    </div>
+
+    <script>
+        const tickSound = new Audio('tick.mp3');
+        const bossMusic = new Audio('boss.mp3'); 
+        const bgMusic = new Audio('bg.mp3'); 
+        bgMusic.loop = true;
+
+        const winVideo = document.getElementById('win-video');
+        const monkeyVideo = document.getElementById('monkey-video');
+        const monkeyDisplay = document.getElementById('monkey-ascii-container');
+        const reel = document.getElementById('reel');
+        const spinBtn = document.getElementById('spinBtn');
+        const statusMsg = document.getElementById('statusMsg');
+        
+        let musicFadeTimeout, musicFadeInterval, bgFadeInInterval;
+
+        // --- AUDIO HELPERS ---
+        document.getElementById('muteToggle').addEventListener('change', (e) => {
+            if (e.target.checked) { bgMusic.pause(); bossMusic.pause(); }
+            else if (casesOpened > 0 && !document.getElementById('win-overlay').style.display) { bgMusic.play().catch(()=>{}); }
+        });
+
+        function fadeBgMusicIn() {
+            if (document.getElementById('muteToggle').checked) return;
+            clearInterval(bgFadeInInterval);
+            bgMusic.play().catch(()=>{});
+            bgFadeInInterval = setInterval(() => {
+                if (bgMusic.volume < 0.95) bgMusic.volume += 0.05;
+                else { bgMusic.volume = 1; clearInterval(bgFadeInInterval); }
+            }, 100);
+        }
+
+        // --- BANANAS ---
+        const bananaCanvas = document.getElementById('banana-canvas');
+        const ctx = bananaCanvas.getContext('2d');
+        let bananaReq, bananas = [], bananaStartTime = null, isFading = false;
+        const bananaDurationBeforeFade = 3000, bananaFadeDuration = 2000;
+
+        class Banana {
+            constructor() {
+                this.x = Math.random() * bananaCanvas.width;
+                this.y = -50; this.size = Math.random() * 20 + 15;
+                this.speedY = Math.random() * 3 + 2; this.speedX = Math.random() * 2 - 1;
+                this.rotation = Math.random() * 360; this.rotationSpeed = Math.random() * 4 - 2;
+            }
+            update() { this.y += this.speedY; this.x += this.speedX; this.rotation += this.rotationSpeed; }
+            draw() {
+                ctx.save(); ctx.translate(this.x, this.y); ctx.rotate(this.rotation * Math.PI / 180);
+                ctx.beginPath(); ctx.moveTo(-this.size/2, -this.size/4);
+                ctx.quadraticCurveTo(0, this.size/2, this.size/2, -this.size/4);
+                ctx.quadraticCurveTo(0, 0, -this.size/2, -this.size/4);
+                ctx.fillStyle = '#ffe135'; ctx.fill(); ctx.restore();
+            }
+        }
+
+        function animateBananas(timestamp) {
+            if (!bananaStartTime) bananaStartTime = timestamp;
+            const elapsed = timestamp - bananaStartTime;
+            ctx.clearRect(0, 0, bananaCanvas.width, bananaCanvas.height);
+            if (elapsed > bananaDurationBeforeFade + bananaFadeDuration) { stopBananaRain(); return; }
+            if (elapsed > bananaDurationBeforeFade) {
+                 isFading = true;
+                 ctx.globalAlpha = 1 - ((elapsed - bananaDurationBeforeFade) / bananaFadeDuration);
+            } else ctx.globalAlpha = 1;
+            if (!isFading && bananas.length < 150) bananas.push(new Banana());
+            bananas.forEach((b, i) => { b.update(); b.draw(); if (b.y > bananaCanvas.height + 50) bananas.splice(i, 1); });
+            if (bananaCanvas.style.display !== 'none') bananaReq = requestAnimationFrame(animateBananas);
+        }
+
+        function startBananaRain() {
+            bananaCanvas.width = window.innerWidth; bananaCanvas.height = window.innerHeight;
+            bananaCanvas.style.display = 'block'; bananaCanvas.style.opacity = '1';
+            bananas = []; bananaStartTime = performance.now(); isFading = false;
+            animateBananas(performance.now());
+        }
+
+        function stopBananaRain() { cancelAnimationFrame(bananaReq); bananaCanvas.style.opacity = '0'; setTimeout(() => bananaCanvas.style.display = 'none', 500); }
+
+        // --- MONKEY ASCII ANIMATION ---
+        const frameClosed = `               ',
+            .-'-,\\__
+              ."\`   \`,
+            .'_.  ._  \`;.
+        __ / \`      \`  \`.\\ .--.
+       /--,| 0)   0)    )\`_.-,)
+      |    ;.-----.__ _-');    /
+       '--./         \`.\`/  \`"\`
+           :   '\`      |.      
+          | \\     /  //        
+           \\ '---'  /'        
+            \`------' \\  
+jgs/a:f      _/       \`--...`;
+
+        const frameOpen = `               ',
+            .-'-,\\__
+              ."\`   \`,
+            .'_.  ._  \`;.
+        __ / \`      \`  \`.\\ .--.
+       /--,| 0)   0)    )\`_.-,)
+      |    ;.-----.__ _-');    /
+       '--./         \`.\`/  \`"\`
+           :   '\`      |.      
+          |  -----   //        
+           \\ '---'  /'        
+            \`------' \\  
+jgs/a:f      _/       \`--...`;
+
+        let talkingInterval = null;
+
+        function startMonkeyTalking() {
+            stopMonkeyTalking(); 
+            let isMouthOpen = false;
+            talkingInterval = setInterval(() => {
+                monkeyDisplay.textContent = isMouthOpen ? frameClosed : frameOpen;
+                isMouthOpen = !isMouthOpen;
+            }, 180);
+            setTimeout(stopMonkeyTalking, 2500);
+        }
+
+        function stopMonkeyTalking() {
+            clearInterval(talkingInterval);
+            monkeyDisplay.textContent = frameClosed;
+        }
+
+        // --- CONFIG & DIALOGUE ---
+        const itemFullWidth = 160, containerCenter = 400;
+        let casesOpened = 0, currentStage = 0;
+
+        const dialogueTree = [
+            {
+                monkeySays: "helo MORTAL!! i ams THE ANCIENT ONE. what want?",
+                options: ["you look quite young for an ANCIENT ONE", "old goofer!"],
+                reactions: ["hehe thanks u homan. i eat banan", "i wil cast u to the shadow realm!"]
+            },
+            {
+                monkeySays: "monke is curious... wat yor wish for christmams?",
+                options: ["nähmaschine (idk wie das auf englisch heißt)", "goober stuff"],
+                reactions: ["ohh interesting! wait...", "wrong answer. try again."]
+            },
+            {
+                monkeySays: "monke brain too small. 'Nähmaschine'? help translate to Monke-ish language plzzz?",
+                options: ["It means 'Sewing Machine'", "OOH OOH AAH AAH"],
+                reactions: ["OOH OOH AAH AAH! why didn't you say so!", "OOH OOH AAH AAH! exactly!"]
+            },
+            {
+                monkeySays: "ok MORTAL, i wil send you and my vasal (the very handsome model next to you) to a secrret misison! get u a NÄHMASCHINE!",
+                options: ["✋ High Five!", "No way, Monkey."],
+                reactions: ["YEAH! Monkey power! Here is your quest!", "Aww... Monkey is sad. But you still gotta do the quest."]
+            }
+        ];
+
+        const itemsConfig = {
+            bruh: { rarity: "bruh", label: "BRUH", name: "nothing", img: "p250.png", video: "bruh.mp4", audio: "bruh.mp3" },
+            secret: { rarity: "secret", label: "SECRET", name: "secret video", img: "m4a1.png", video: "secret.mp4", audio: "secret.mp3" },
+            ultra: { rarity: "ultra", label: "ULTRA RARE", name: "THE ANCIENT ONE", img: "knife.png", video: "ultra.mp4", audio: "ultra.mp3" }
+        };
+
+        function playMonkeyFile(file) { 
+            if (!document.getElementById('muteToggle').checked) { 
+                monkeyVideo.src = file; 
+                monkeyVideo.play().catch(()=>{}); 
+                startMonkeyTalking(); 
+            } 
+        }
+
+        // --- UPDATED DIALOGUE LOGIC ---
+        function talkToMonkey(idx) {
+            const d = document.getElementById('monkey-dialog');
+            const choices = document.getElementById('monkey-choices');
+            
+            // 1. Show reaction
+            d.innerText = dialogueTree[currentStage].reactions[idx];
+            choices.innerHTML = ""; 
+
+            // Check if she picked "goober stuff" on Stage 1 (the 2nd question)
+            const isWrongAnswerLoop = (currentStage === 1 && idx === 1);
+
+            if (isWrongAnswerLoop) {
+                playMonkeyFile("monkey_sad.mp4");
+            } else if (idx === 0 || currentStage === 2) {
+                playMonkeyFile("monkey_happy.mp4");
+            } else {
+                playMonkeyFile("monkey_sad.mp4");
+            }
+
+            // 2. Only advance if it's NOT the wrong answer
+            if (!isWrongAnswerLoop) {
+                currentStage++;
+            }
+
+            setTimeout(() => {
+                if (currentStage < dialogueTree.length) {
+                    showDialogueStage();
+                } else {
+                    showQuestLog();
+                }
+            }, 2500);
+        }
+
+        function showDialogueStage() {
+            const d = document.getElementById('monkey-dialog'), c = document.getElementById('monkey-choices'), s = dialogueTree[currentStage];
+            d.innerText = s.monkeySays; c.innerHTML = ""; playMonkeyFile("monkey_talk.mp4");
+            s.options.forEach((txt, i) => { const b = document.createElement('button'); b.className = "btn-choice"; b.innerText = txt; b.onclick = () => talkToMonkey(i); c.appendChild(b); });
+        }
+
+        function showQuestLog() {
+            document.getElementById('initial-win-content').style.display = 'none';
+            const q = document.getElementById('quest-log-content'); q.style.display = 'block';
+            q.innerHTML = `<div class="quest-log-container"><div class="quest-title">📜 MONKE QUEST 📜</div><ul class="quest-list"><li>Locate handsome model.</li><li>Hug her 5 seconds.</li><li class="final">FINAL BOSS: Claim Sewing Machine!</li></ul></div>`;
+            stopBananaRain();
+        }
+
+        // --- SPIN LOGIC ---
+        function spin() {
+            if (bgMusic.paused && !document.getElementById('muteToggle').checked) bgMusic.play().catch(()=>{});
+            casesOpened++; document.getElementById('caseCount').innerText = casesOpened;
+            spinBtn.disabled = true; statusMsg.innerText = "HERE WE GOOO!";
+            
+            let winItem = (casesOpened === 10) ? itemsConfig.ultra : (casesOpened === 9 ? itemsConfig.secret : itemsConfig.bruh);
+            reel.style.transition = "none"; reel.style.transform = "translateX(0)"; reel.innerHTML = "";
+            
+            const total = 90, winIdx = 75, isNear = (casesOpened <= 8) && (Math.random() < 0.35 && casesOpened !== 5), missDir = Math.random() > 0.5 ? 1 : -1;
+            
+            for (let i = 0; i < total; i++) {
+                let d;
+                if (i === winIdx) {
+                    d = (casesOpened === 5) ? itemsConfig.secret : winItem;
+                } else if (casesOpened === 5 && i === winIdx - 1) {
+                    d = itemsConfig.bruh;
+                } else if (isNear && i === (winIdx + missDir)) {
+                    d = Math.random() > 0.5 ? itemsConfig.secret : itemsConfig.ultra;
+                } else {
+                    d = (Math.random() < 0.08 ? itemsConfig.secret : itemsConfig.bruh);
+                }
+                const div = document.createElement('div'); div.className = `item rarity-${d.rarity}`;
+                div.innerHTML = `<img src="${d.img}"><span>${d.name}</span>`; reel.appendChild(div);
+            }
+
+            setTimeout(() => {
+                let off = (casesOpened === 1 || casesOpened === 10 || casesOpened === 5) ? 0 : (isNear ? 76.5 * missDir : Math.random() * 60 - 30);
+                const firstTarget = (winIdx * itemFullWidth) + (itemFullWidth / 2) - containerCenter + off;
+                reel.style.transition = "transform 6.8s cubic-bezier(0.1, 0, 0, 1)";
+                reel.style.transform = `translateX(-${firstTarget}px)`;
+                
+                let lastT = 0;
+                function chk() {
+                    const matrix = new WebKitCSSMatrix(window.getComputedStyle(reel).transform);
+                    let cur = Math.floor((Math.abs(matrix.m41) + containerCenter) / itemFullWidth);
+                    if (cur !== lastT && !document.getElementById('muteToggle').checked) { const s = tickSound.cloneNode(); s.volume = 0.2; s.play().catch(()=>{}); }
+                    lastT = cur; if (spinBtn.disabled) requestAnimationFrame(chk);
+                }
+                requestAnimationFrame(chk);
+
+                setTimeout(() => {
+                    if (casesOpened === 5) {
+                        statusMsg.innerText = "OMG RED??? WAIT...";
+                        setTimeout(() => {
+                            statusMsg.innerText = "SIKE! HAHA!";
+                            reel.style.transition = "transform 1.8s cubic-bezier(0.45, 0.05, 0.55, 0.95)";
+                            const rollBackTarget = firstTarget - itemFullWidth;
+                            reel.style.transform = `translateX(-${rollBackTarget}px)`;
+                            setTimeout(() => { showWinner(itemsConfig.bruh); }, 2000);
+                        }, 1500);
+                    } else {
+                        showWinner(winItem);
+                    }
+                }, 7200);
+            }, 50);
+        }
+
+        function showWinner(item) {
+            document.getElementById('initial-win-content').style.display = 'block'; document.getElementById('quest-log-content').style.display = 'none';
+            document.getElementById('win-name').innerText = item.name; document.getElementById('win-rarity').innerText = item.label;
+            document.getElementById('win-img').src = item.img; document.getElementById('win-name').style.color = `var(--${item.rarity})`;
+
+            if (!document.getElementById('muteToggle').checked) {
+                if (item.rarity === 'bruh') {
+                    const bA = new Audio(item.audio); bA.playbackRate = Math.random() * (3.5 - 0.3) + 0.3; bA.play().catch(()=>{});
+                }
+                if (item.rarity === 'secret') { bgMusic.volume = 0.3; new Audio(item.audio).play().catch(()=>{}); }
+                if (item.rarity === 'ultra') {
+                    bgMusic.volume = 0; bossMusic.currentTime = 0; bossMusic.loop = true; bossMusic.play().catch(()=>{});
+                    musicFadeTimeout = setTimeout(() => {
+                        musicFadeInterval = setInterval(() => {
+                            if (bossMusic.volume > 0.05) bossMusic.volume -= 0.05;
+                            else { bossMusic.volume = 0; bossMusic.pause(); clearInterval(musicFadeInterval); fadeBgMusicIn(); }
+                        }, 100);
+                    }, 7000);
+                    startBananaRain(); currentStage = 0; showDialogueStage(); document.getElementById('monkey-interaction').style.display = 'flex';
+                } else document.getElementById('monkey-interaction').style.display = 'none';
+            }
+            winVideo.src = item.video; winVideo.play().catch(()=>{}); document.getElementById('win-overlay').style.display = 'flex';
+            
+            const grid = document.getElementById('collectionGrid');
+            const card = document.createElement('div');
+            card.className = 'reward-card';
+            card.innerHTML = `<img src="${item.img}" style="width:50px;"><br><b>${item.name}</b>`;
+            grid.appendChild(card);
+        }
+
+        function closeModal() {
+            document.getElementById('win-overlay').style.display = 'none';
+            winVideo.pause(); monkeyVideo.pause(); clearTimeout(musicFadeTimeout); clearInterval(musicFadeInterval);
+            bossMusic.pause(); bossMusic.volume = 1; fadeBgMusicIn();
+            stopMonkeyTalking(); stopBananaRain(); spinBtn.disabled = false; statusMsg.innerText = "Again? Again?";
+        }
+
+        function populateLootTable() {
+            const grid = document.getElementById('possibleRewardsGrid');
+            Object.values(itemsConfig).forEach(item => {
+                const card = document.createElement('div');
+                card.className = 'possible-item-card';
+                card.innerHTML = `
+                    <div style="font-size:12px; color:var(--${item.rarity}); font-weight:bold;">${item.label}</div>
+                    <img src="${item.img}">
+                    <div style="font-size:14px; margin-top:5px;">${item.name}</div>
+                `;
+                grid.appendChild(card);
+            });
+        }
+        populateLootTable();
+        monkeyDisplay.textContent = frameClosed;
+    </script>
+</body>
+</html>
